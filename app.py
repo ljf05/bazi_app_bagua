@@ -12,6 +12,7 @@ from PIL import Image, ImageDraw, ImageFont
 import qrcode
 import requests
 import time
+import pandas as pd
 
 # ==================== 页面配置 ====================
 st.set_page_config(
@@ -88,93 +89,19 @@ MONTH_ZHI_MAP = {
     "戌": "寒露", "亥": "立冬", "子": "大雪", "丑": "小寒",
 }
 
-# ==================== 全国城市经度库 ====================
 CITY_LONGITUDE = {
-    "北京": 116.4, "上海": 121.5, "广州": 113.3, "深圳": 114.1,
-    "杭州": 120.2, "成都": 104.1, "武汉": 114.3, "南京": 118.8,
-    "西安": 108.9, "沈阳": 123.4, "昆明": 102.7, "长沙": 113.0,
-    "郑州": 113.7, "济南": 117.0, "哈尔滨": 126.6, "长春": 125.3,
-    "兰州": 103.8, "西宁": 101.8, "拉萨": 91.1, "乌鲁木齐": 87.6,
-    "呼和浩特": 111.7, "南宁": 108.4, "海口": 110.3, "台北": 121.5,
-    "香港": 114.2, "澳门": 113.5, "太原": 112.5, "石家庄": 114.5,
-    "合肥": 117.3, "福州": 119.3, "南昌": 115.9, "贵阳": 106.7,
-    "银川": 106.3, "重庆": 106.5, "天津": 117.2,
-    "驻马店": 114.0, "洛阳": 112.4, "开封": 114.3, "南阳": 112.5,
-    "周口": 114.6, "商丘": 115.7, "新乡": 113.9, "安阳": 114.4,
-    "许昌": 113.8, "平顶山": 113.3, "信阳": 114.1, "濮阳": 115.1,
-    "焦作": 113.2, "漯河": 114.0, "三门峡": 111.2, "鹤壁": 114.3,
-    "济源": 112.6, "佛山": 113.1, "东莞": 113.7, "珠海": 113.6,
-    "中山": 113.4, "惠州": 114.4, "江门": 113.1, "汕头": 116.7,
-    "湛江": 110.4, "肇庆": 112.5, "茂名": 110.9, "梅州": 116.1,
-    "汕尾": 115.4, "阳江": 111.9, "清远": 113.0, "揭阳": 116.4,
-    "云浮": 112.0, "河源": 114.7, "潮州": 116.6,
-    "青岛": 120.4, "烟台": 121.4, "潍坊": 119.1, "淄博": 118.1,
-    "济宁": 116.6, "临沂": 118.3, "威海": 122.1, "泰安": 117.1,
-    "德州": 116.3, "聊城": 115.9, "枣庄": 117.3, "日照": 119.5,
-    "滨州": 118.0, "菏泽": 115.4,
-    "苏州": 120.6, "无锡": 120.3, "常州": 119.9, "徐州": 117.2,
-    "南通": 120.9, "扬州": 119.4, "镇江": 119.4, "盐城": 120.1,
-    "淮安": 119.0, "连云港": 119.2, "泰州": 119.9, "宿迁": 118.3,
-    "宁波": 121.6, "温州": 120.7, "绍兴": 120.6, "台州": 121.4,
-    "嘉兴": 120.8, "金华": 119.6, "湖州": 120.1, "衢州": 118.9,
-    "丽水": 119.9, "舟山": 122.2,
-    "绵阳": 104.7, "德阳": 104.4, "宜宾": 104.6, "南充": 106.1,
-    "泸州": 105.4, "达州": 107.5, "乐山": 103.8, "内江": 105.1,
-    "自贡": 104.8, "眉山": 103.8, "广安": 106.6, "攀枝花": 101.7,
-    "株洲": 113.1, "湘潭": 112.9, "衡阳": 112.6, "邵阳": 111.5,
-    "岳阳": 113.1, "常德": 111.7, "益阳": 112.4, "郴州": 113.0,
-    "永州": 111.6, "怀化": 110.0, "娄底": 112.0,
-    "黄石": 115.1, "十堰": 110.8, "宜昌": 111.3, "襄阳": 112.2,
-    "鄂州": 114.9, "荆门": 112.2, "孝感": 113.9, "荆州": 112.3,
-    "黄冈": 114.9, "咸宁": 114.3, "随州": 113.4, "恩施": 109.5,
-    "仙桃": 113.4, "天门": 113.2,
-    "唐山": 118.2, "秦皇岛": 119.6, "邯郸": 114.5, "邢台": 114.5,
-    "保定": 115.5, "张家口": 114.9, "承德": 117.9, "沧州": 116.8,
-    "廊坊": 116.7, "衡水": 115.7,
-    "芜湖": 118.4, "蚌埠": 117.3, "淮南": 116.9, "马鞍山": 118.5,
-    "淮北": 116.8, "铜陵": 117.8, "安庆": 117.1, "黄山": 118.3,
-    "滁州": 118.3, "阜阳": 115.8, "宿州": 117.0, "六安": 116.5,
-    "亳州": 115.8, "池州": 117.5, "宣城": 118.8,
-    "厦门": 118.1, "莆田": 119.0, "三明": 117.6, "泉州": 118.6,
-    "漳州": 117.7, "南平": 118.2, "龙岩": 117.0, "宁德": 119.5,
-    "景德镇": 117.2, "萍乡": 113.9, "九江": 116.0, "新余": 114.9,
-    "鹰潭": 117.0, "赣州": 114.9, "吉安": 115.0, "宜春": 114.4,
-    "抚州": 116.4, "上饶": 118.0,
-    "大同": 113.3, "阳泉": 113.6, "长治": 113.1, "晋城": 112.9,
-    "朔州": 112.4, "晋中": 112.8, "运城": 111.0, "忻州": 112.7,
-    "临汾": 111.5, "吕梁": 111.1,
-    "铜川": 109.1, "宝鸡": 107.1, "咸阳": 108.7, "渭南": 109.5,
-    "延安": 109.5, "汉中": 107.0, "榆林": 109.7, "安康": 109.0,
-    "商洛": 109.9,
-    "大连": 121.6, "鞍山": 123.0, "抚顺": 123.9, "本溪": 123.8,
-    "丹东": 124.4, "锦州": 121.1, "营口": 122.2, "阜新": 121.7,
-    "辽阳": 123.2, "盘锦": 122.1, "铁岭": 123.9, "朝阳": 120.5,
-    "葫芦岛": 120.8,
-    "吉林市": 126.5, "四平": 124.4, "辽源": 125.1, "通化": 125.9,
-    "白山": 126.4, "松原": 124.8, "白城": 122.8, "延吉": 129.5,
-    "齐齐哈尔": 123.9, "鸡西": 130.9, "鹤岗": 130.3, "双鸭山": 131.2,
-    "大庆": 125.1, "伊春": 128.9, "佳木斯": 130.4, "七台河": 131.0,
-    "牡丹江": 129.6, "黑河": 127.5, "绥化": 126.9,
-    "包头": 109.8, "乌海": 106.8, "赤峰": 118.9, "通辽": 122.3,
-    "鄂尔多斯": 110.0, "呼伦贝尔": 119.7, "巴彦淖尔": 107.4,
-    "乌兰察布": 113.1,
-    "克拉玛依": 84.9, "吐鲁番": 89.2, "哈密": 93.5,
-    "嘉峪关": 98.3, "金昌": 102.2, "白银": 104.2, "天水": 105.7,
-    "武威": 102.6, "张掖": 100.5, "平凉": 106.7, "酒泉": 98.5,
-    "庆阳": 107.6, "定西": 104.6, "陇南": 104.9,
-    "石嘴山": 106.4, "吴忠": 106.2, "固原": 106.3, "中卫": 105.2,
-    "遵义": 106.9, "六盘水": 104.8, "安顺": 105.9, "毕节": 105.3,
-    "铜仁": 109.2,
-    "曲靖": 103.8, "玉溪": 102.5, "保山": 99.2, "昭通": 103.7,
-    "丽江": 100.2, "普洱": 100.9, "临沧": 100.1,
-    "三亚": 109.5, "儋州": 109.6,
-    "柳州": 109.4, "桂林": 110.3, "梧州": 111.3, "北海": 109.1,
-    "防城港": 108.4, "钦州": 108.7, "贵港": 109.6, "玉林": 110.1,
-    "百色": 106.6, "贺州": 111.5, "河池": 108.1, "来宾": 109.2,
-    "崇左": 107.4,
+    "北京": 116.4, "上海": 121.5, "天津": 117.2, "重庆": 106.5,
+    "广州": 113.3, "深圳": 114.1, "杭州": 120.2, "成都": 104.1,
+    "武汉": 114.3, "南京": 118.8, "西安": 108.9, "沈阳": 123.4,
+    "昆明": 102.7, "长沙": 113.0, "郑州": 113.7, "济南": 117.0,
+    "哈尔滨": 126.6, "长春": 125.3, "兰州": 103.8, "西宁": 101.8,
+    "拉萨": 91.1, "乌鲁木齐": 87.6, "呼和浩特": 111.7, "南宁": 108.4,
+    "海口": 110.3, "台北": 121.5, "香港": 114.2, "澳门": 113.5,
+    "太原": 112.5, "石家庄": 114.5, "合肥": 117.3, "福州": 119.3,
+    "南昌": 115.9, "贵阳": 106.7, "银川": 106.3, "驻马店": 114.0,
 }
 
-# ==================== 今日黄历/宜忌 ====================
+# ==================== 今日黄历 ====================
 def get_today_almanac():
     try:
         from lunar_python import Lunar
@@ -187,8 +114,7 @@ def get_today_almanac():
         zodiac = lunar.getYearZodiac() if hasattr(lunar, 'getYearZodiac') else "龙"
         return {"lunar_date": lunar_date, "zodiac": zodiac, "yi": yi[:5], "ji": ji[:5]}
     except:
-        today = datetime.datetime.now()
-        return {"lunar_date": f"农历五月廿八", "zodiac": "龙", "yi": ["出行", "签约", "会友", "祈福", "求财"], "ji": ["动土", "安葬", "开市", "破土"]}
+        return {"lunar_date": "农历五月廿八", "zodiac": "龙", "yi": ["出行", "签约", "会友", "祈福", "求财"], "ji": ["动土", "安葬", "开市", "破土"]}
 
 # ==================== 八字配对 ====================
 def bazi_match(bazi1, bazi2):
@@ -229,7 +155,64 @@ def bazi_match(bazi1, bazi2):
         advice = "缘分天成！虽然偶有摩擦，但彼此珍惜就能长久。"
     else:
         advice = "需要更多包容和理解，多沟通会让关系更和谐。"
-    return {"score": total_score, "element_desc": element_desc, "yy_desc": yy_desc, "advice": advice, "day_element1": day_element1.value, "day_element2": day_element2.value}
+    return {"score": total_score, "element_desc": element_desc, "yy_desc": yy_desc, "advice": advice}
+
+# ==================== 命理答题 ====================
+# ==================== 命理答题 ====================
+def get_quiz_result(answers):
+    element_scores = {"木": 0, "火": 0, "土": 0, "金": 0, "水": 0}
+    for answer in answers:
+        if answer in element_scores:
+            element_scores[answer] += 1
+    max_element = max(element_scores, key=element_scores.get)
+    max_score = element_scores[max_element]
+    personality_map = {
+        "木": {
+            "title": "🌳 木命人 · 温暖治愈型",
+            "desc": "你像一棵大树，给人安全感和温暖。性格温和、善良、有耐心，善于倾听和关心他人。",
+            "strengths": "善良、有爱心、善于倾听、包容性强",
+            "weaknesses": "有时过于优柔寡断、容易心软",
+            "advice": "适合从事教育、医疗、心理咨询、文化创作等工作。",
+            "color": "#4CAF50"
+        },
+        "火": {
+            "title": "🔥 火命人 · 热情开朗型",
+            "desc": "你像一团火焰，充满能量和热情。性格外向、积极、有感染力。",
+            "strengths": "热情、自信、有领导力、行动力强",
+            "weaknesses": "有时冲动、缺乏耐心、容易急躁",
+            "advice": "适合从事销售、管理、演讲、演艺等工作。",
+            "color": "#F44336"
+        },
+        "土": {
+            "title": "🏔️ 土命人 · 稳重可靠型",
+            "desc": "你像大地一样厚重可靠，是朋友最信任的依靠。",
+            "strengths": "稳重、可靠、诚信、有责任心",
+            "weaknesses": "有时保守固执、缺乏灵活性",
+            "advice": "适合从事建筑、管理、金融、法律等工作。",
+            "color": "#FF9800"
+        },
+        "金": {
+            "title": "⚔️ 金命人 · 果断干练型",
+            "desc": "你像金属一样坚硬锋利，做事果断利落。",
+            "strengths": "果断、理性、有魄力、执行力强",
+            "weaknesses": "有时过于强势、缺乏同理心",
+            "advice": "适合从事技术、法律、管理、创业等工作。",
+            "color": "#616161"
+        },
+        "水": {
+            "title": "🌊 水命人 · 灵活智慧型",
+            "desc": "你像水一样灵动多变，充满智慧。",
+            "strengths": "聪明、灵活、善于思考、适应力强",
+            "weaknesses": "有时过于犹豫、缺乏决断力",
+            "advice": "适合从事科研、咨询、策划、创作等工作。",
+            "color": "#0D47A1"
+        }
+    }
+    result = personality_map[max_element]
+    result["score"] = max_score
+    result["element"] = max_element
+    result["scores"] = element_scores
+    return result
 
 # ==================== 八字核心类 ====================
 class BaziCalculator:
@@ -763,16 +746,9 @@ def display_pet(pet_data, gender):
 
 # ==================== 生成分享卡片 ====================
 def generate_share_card(pet_data, result, gender, bazi_str, city, is_anonymous=False):
-    """生成分享卡片（支持匿名模式）"""
-    from PIL import Image, ImageDraw, ImageFont
-    import io
-    import base64
-    from datetime import datetime
-
     width, height = 600, 780
     img = Image.new('RGB', (width, height), color='#F8F6F0')
     draw = ImageDraw.Draw(img)
-
     colors = {
         "木": {"main": "#2E7D32", "light": "#C8E6C9"},
         "火": {"main": "#C62828", "light": "#FFCDD2"},
@@ -784,7 +760,6 @@ def generate_share_card(pet_data, result, gender, bazi_str, city, is_anonymous=F
     color = colors.get(day_element, colors["木"])
     main_color = color["main"]
     light_color = color["light"]
-
     try:
         font_big = ImageFont.truetype("simhei.ttf", 44)
         font_mid = ImageFont.truetype("simhei.ttf", 24)
@@ -792,12 +767,8 @@ def generate_share_card(pet_data, result, gender, bazi_str, city, is_anonymous=F
         font_tiny = ImageFont.truetype("simhei.ttf", 14)
     except:
         font_big = font_mid = font_small = font_tiny = ImageFont.load_default()
-
-    # 顶部装饰
     draw.rectangle([(0, 0), (width, 12)], fill=main_color)
     draw.rectangle([(0, 12), (width, 90)], fill=light_color)
-
-    # 八字横排
     pillars = ["年柱", "月柱", "日柱", "时柱"]
     pillar_values = [result['八字'][p] for p in pillars]
     y_start = 30
@@ -807,12 +778,8 @@ def generate_share_card(pet_data, result, gender, bazi_str, city, is_anonymous=F
         x = start_x + i * 130
         draw.text((x + 15, y_start), name, fill="#888", font=font_small)
         draw.text((x + 10, y_start + 28), value, fill=main_color, font=font_big)
-
-    # 匿名标识
     if is_anonymous:
         draw.text((width-120, 20), "🔒 匿名分享", fill="#888", font=font_small)
-
-    # 一句话总结
     summary = pet_data['say']
     try:
         bbox = draw.textbbox((0, 0), summary, font=font_mid)
@@ -823,45 +790,32 @@ def generate_share_card(pet_data, result, gender, bazi_str, city, is_anonymous=F
         text_h = 30
     x_center = (width - text_w) // 2 - 16
     y_summary = 105
-    draw.rounded_rectangle([(x_center - 10, y_summary - 6), 
-                           (x_center + text_w + 10, y_summary + text_h + 6)], 
-                           radius=12, fill=main_color)
+    draw.rounded_rectangle([(x_center - 10, y_summary - 6), (x_center + text_w + 10, y_summary + text_h + 6)], radius=12, fill=main_color)
     draw.text((x_center, y_summary), summary, fill="#FFFFFF", font=font_mid)
-
     info_line = f"🎭 {pet_data['personality']} ｜ {pet_data['action']}"
     draw.text((30, 165), info_line, fill="#666", font=font_small)
     draw.line([(30, 195), (width-30, 195)], fill="#E8E8E8", width=1)
-
     y_lucky = 215
     draw.text((30, y_lucky), "🌟 今日幸运物", fill=main_color, font=font_small)
     draw.text((30, y_lucky + 28), f"🍽️ {pet_data['eat']}", fill="#444", font=font_small)
     draw.text((30, y_lucky + 56), f"🎨 幸运色：", fill="#444", font=font_small)
     color_block_x = 30 + len("🎨 幸运色：") * 16
-    draw.rectangle([(color_block_x, y_lucky + 56), (color_block_x + 36, y_lucky + 80)], 
-                   fill=main_color, outline=main_color)
+    draw.rectangle([(color_block_x, y_lucky + 56), (color_block_x + 36, y_lucky + 80)], fill=main_color, outline=main_color)
     draw.text((color_block_x + 40, y_lucky + 56), result['命理建议']['颜色'], fill=main_color, font=font_small)
-
     draw.text((320, y_lucky), "🎯 今日宜做", fill=main_color, font=font_small)
     draw.text((320, y_lucky + 28), f"🎮 {pet_data['play']}", fill="#444", font=font_small)
     draw.text((320, y_lucky + 56), f"👥 {pet_data['with']}", fill="#444", font=font_small)
-
     y_fish = 310
     draw.rounded_rectangle([(30, y_fish), (width-30, y_fish + 60)], radius=8, fill="#FFF3E0")
     draw.text((48, y_fish + 10), "🐟 今日摸鱼指南", fill="#E65100", font=font_small)
     draw.text((48, y_fish + 36), pet_data['fish'], fill="#555", font=font_tiny)
-
-    # 底部
     y_bottom = height - 70
     avatar_emoji = "👦" if gender == "男" else "👧"
     if is_anonymous:
-        draw.text((30, y_bottom - 10), f"{avatar_emoji} 匿名用户 · 命理小精灵", 
-                  fill=main_color, font=font_small)
+        draw.text((30, y_bottom - 10), f"{avatar_emoji} 匿名用户 · 命理小精灵", fill=main_color, font=font_small)
     else:
-        draw.text((30, y_bottom - 10), f"{avatar_emoji} 命理小精灵 · {pet_data['name']}", 
-                  fill=main_color, font=font_small)
-
+        draw.text((30, y_bottom - 10), f"{avatar_emoji} 命理小精灵 · {pet_data['name']}", fill=main_color, font=font_small)
     try:
-        import qrcode
         qr = qrcode.QRCode(box_size=2, border=1)
         qr.add_data("https://bazi-app-bagua-iw5jfhvghayccvpfgcnpq.streamlit.app/")
         qr.make(fit=True)
@@ -870,25 +824,21 @@ def generate_share_card(pet_data, result, gender, bazi_str, city, is_anonymous=F
         img.paste(qr_img, (width-85, height-80))
     except:
         pass
-
-    now = datetime.now().strftime("%Y-%m-%d %H:%M")
+    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
     draw.text((30, height-30), f"生成于 {now}", fill="#BBB", font=font_tiny)
     draw.rectangle([(0, height-6), (width, height)], fill=main_color)
-
     buffered = io.BytesIO()
     img.save(buffered, format="PNG")
     img_base64 = base64.b64encode(buffered.getvalue()).decode()
     return img_base64
 
-# ==================== 🆕 大运倒计时 ====================
+# ==================== 大运倒计时 ====================
 def get_next_luck_countdown(luck_years, current_age):
-    """计算距离下一个大运还有多少天"""
     for luck in luck_years:
         age_range = luck["运程"].replace("岁", "").split("-")
         start_age = int(age_range[0])
         end_age = int(age_range[1])
         if current_age < start_age:
-            # 还没到这个大运，计算还有多少天
             days_to_start = int((start_age - current_age) * 365.25)
             return {
                 "next_luck": luck,
@@ -920,7 +870,7 @@ with st.sidebar:
     st.header("🧭 功能导航")
     page = st.radio(
         "选择功能",
-        ["🔮 八字排盘", "📅 今日黄历", "💑 八字配对"],
+        ["🔮 八字排盘", "📅 今日黄历", "💑 八字配对", "🧠 命理答题"],
         index=0
     )
     st.divider()
@@ -986,7 +936,7 @@ if page == "🔮 八字排盘":
                 avg_score = sum(scores) / len(scores)
                 col3.metric("🌟 总体运势", "吉运偏多" if avg_score > 0 else "凶运偏多", delta=f"平均{avg_score:.1f}分")
                 
-                # ===== 🆕 大运倒计时 =====
+                # 大运倒计时
                 st.divider()
                 st.subheader("⏳ 大运倒计时")
                 current_age = datetime.datetime.now().year - year
@@ -997,12 +947,8 @@ if page == "🔮 八字排盘":
                     element = next_info["element"]
                     start_age = next_info["start_age"]
                     end_age = next_info["end_age"]
-                    
-                    # 计算还剩多少年多少天
                     years = days // 365
                     remaining_days = days % 365
-                    
-                    # 根据剩余天数显示不同颜色
                     if days < 30:
                         color = "#F44336"
                         emoji = "🔥"
@@ -1047,7 +993,7 @@ if page == "🔮 八字排盘":
             
             display_pet(result["宠物"], gender)
             
-            # ===== 分享卡片（含匿名选项） =====
+            # 分享卡片
             st.divider()
             st.subheader("📸 分享运势卡片")
             
@@ -1106,9 +1052,7 @@ if page == "🔮 八字排盘":
 elif page == "📅 今日黄历":
     st.divider()
     st.subheader("📅 今日黄历 · 宜忌指南")
-    
     almanac = get_today_almanac()
-    
     col1, col2 = st.columns([1, 2])
     with col1:
         st.markdown(f"""
@@ -1118,7 +1062,6 @@ elif page == "📅 今日黄历":
             <div style="font-size: 16px; color: #666;">生肖：{almanac['zodiac']}</div>
         </div>
         """, unsafe_allow_html=True)
-    
     with col2:
         st.markdown(f"""
         <div style="background: #f8f9fa; border-radius: 16px; padding: 16px 20px;">
@@ -1134,7 +1077,6 @@ elif page == "📅 今日黄历":
             </div>
         </div>
         """, unsafe_allow_html=True)
-    
     st.caption(f"📌 数据来源：农历算法 ｜ 更新日期：{datetime.datetime.now().strftime('%Y-%m-%d')}")
 
 # ==================== 页面3：八字配对 ====================
@@ -1142,7 +1084,6 @@ elif page == "💑 八字配对":
     st.divider()
     st.subheader("💑 八字配对 · 缘分测试")
     st.caption("输入你和TA的出生信息，看看你们的八字合不合~")
-    
     with st.form("match_form"):
         st.markdown("**👤 你的信息**")
         col1, col2 = st.columns(2)
@@ -1154,7 +1095,6 @@ elif page == "💑 八字配对":
             hour1 = st.number_input("出生小时", min_value=0, max_value=23, value=0, key="h1")
         gender1 = st.selectbox("性别", ["男", "女"], key="g1")
         city1 = st.text_input("出生城市", value="北京", key="c1")
-        
         st.divider()
         st.markdown("**👤 TA的信息**")
         col1, col2 = st.columns(2)
@@ -1166,23 +1106,19 @@ elif page == "💑 八字配对":
             hour2 = st.number_input("出生小时", min_value=0, max_value=23, value=0, key="h2")
         gender2 = st.selectbox("性别", ["男", "女"], key="g2")
         city2 = st.text_input("出生城市", value="北京", key="c2")
-        
         submitted_match = st.form_submit_button("💞 查看配对结果", use_container_width=True)
     
     if submitted_match:
         with st.spinner("🔮 正在分析你们的缘分..."):
             lon1 = CITY_LONGITUDE.get(city1.strip(), 120.0)
             lon2 = CITY_LONGITUDE.get(city2.strip(), 120.0)
-            
             calc1 = BaziCalculator(year1, month1, day1, hour1, 0, lon1)
             calc2 = BaziCalculator(year2, month2, day2, hour2, 0, lon2)
             bazi1 = calc1.calculate_bazi()
             bazi2 = calc2.calculate_bazi()
-            
             match_result = bazi_match(bazi1, bazi2)
             
             st.divider()
-            
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
                 st.markdown(f"""
@@ -1196,7 +1132,6 @@ elif page == "💑 八字配对":
                 """, unsafe_allow_html=True)
             
             st.divider()
-            
             col1, col2 = st.columns(2)
             with col1:
                 st.markdown(f"""
@@ -1216,7 +1151,6 @@ elif page == "💑 八字配对":
                 """, unsafe_allow_html=True)
             
             st.divider()
-            
             st.markdown(f"""
             <div style="background: #f8f9fa; border-radius: 12px; padding: 16px;">
                 <div style="display: flex; gap: 20px; flex-wrap: wrap;">
@@ -1238,7 +1172,6 @@ elif page == "🧠 命理答题":
     st.caption("回答6道题，测测你的命理人格类型~ 只需30秒！")
     st.divider()
     
-    # 题目数据
     questions = [
         {
             "id": 1,
@@ -1278,10 +1211,7 @@ elif page == "🧠 命理答题":
         },
     ]
     
-    # 存储答案
     answers = []
-    
-    # 显示题目
     for q in questions:
         st.markdown(f"**{q['question']}**")
         answer = st.radio(
@@ -1294,93 +1224,35 @@ elif page == "🧠 命理答题":
         answers.append(answer)
         st.divider()
     
-    # 提交按钮
     if st.button("🔮 查看我的命理人格", use_container_width=True):
-        # 计算五行得分
-        element_scores = {"木": 0, "火": 0, "土": 0, "金": 0, "水": 0}
+    # 把答案转换成五行对应的值
+        quiz_answers = []
         for i, answer in enumerate(answers):
             q = questions[i]
             if answer in q['scores']:
-                element_scores[q['scores'][answer]] += 1
+                quiz_answers.append(q['scores'][answer])
+        result = get_quiz_result(quiz_answers)
         
-        # 找出最高分五行
-        max_element = max(element_scores, key=element_scores.get)
-        max_score = element_scores[max_element]
-        
-        # 五行人格描述
-        personality_map = {
-            "木": {
-                "title": "🌳 木命人 · 温暖治愈型",
-                "desc": "你像一棵大树，给人安全感和温暖。性格温和、善良、有耐心，善于倾听和关心他人。",
-                "strengths": "善良、有爱心、善于倾听、包容性强",
-                "weaknesses": "有时过于优柔寡断、容易心软",
-                "advice": "适合从事教育、医疗、心理咨询、文化创作等工作。学会适当拒绝，保护自己的能量。",
-                "emoji": "🌳",
-                "color": "#4CAF50"
-            },
-            "火": {
-                "title": "🔥 火命人 · 热情开朗型",
-                "desc": "你像一团火焰，充满能量和热情。性格外向、积极、有感染力，喜欢带领团队前进。",
-                "strengths": "热情、自信、有领导力、行动力强",
-                "weaknesses": "有时冲动、缺乏耐心、容易急躁",
-                "advice": "适合从事销售、管理、演讲、演艺等工作。学会控制情绪，多些耐心和冷静。",
-                "emoji": "🔥",
-                "color": "#F44336"
-            },
-            "土": {
-                "title": "🏔️ 土命人 · 稳重可靠型",
-                "desc": "你像大地一样厚重可靠，是朋友最信任的依靠。性格踏实、稳重、诚信、有责任心。",
-                "strengths": "稳重、可靠、诚信、有责任心",
-                "weaknesses": "有时保守固执、缺乏灵活性",
-                "advice": "适合从事建筑、管理、金融、法律等工作。学会开放心态，拥抱变化。",
-                "emoji": "🏔️",
-                "color": "#FF9800"
-            },
-            "金": {
-                "title": "⚔️ 金命人 · 果断干练型",
-                "desc": "你像金属一样坚硬锋利，做事果断利落。性格理性、果断、有魄力、追求效率。",
-                "strengths": "果断、理性、有魄力、执行力强",
-                "weaknesses": "有时过于强势、缺乏同理心",
-                "advice": "适合从事技术、法律、管理、创业等工作。学会倾听和同理心，让团队更和谐。",
-                "emoji": "⚔️",
-                "color": "#616161"
-            },
-            "水": {
-                "title": "🌊 水命人 · 灵活智慧型",
-                "desc": "你像水一样灵动多变，充满智慧。性格灵活、聪明、善于思考、适应力强。",
-                "strengths": "聪明、灵活、善于思考、适应力强",
-                "weaknesses": "有时过于犹豫、缺乏决断力",
-                "advice": "适合从事科研、咨询、策划、创作等工作。学会果断决策，抓住机遇。",
-                "emoji": "🌊",
-                "color": "#0D47A1"
-            }
-        }
-        
-        result = personality_map[max_element]
-        
-        # 显示结果
         st.divider()
         st.subheader("🔮 你的命理人格结果")
         
-        # 分数分布
         st.markdown("**📊 五行得分分布**")
         cols = st.columns(5)
         element_emojis = {"木": "🌳", "火": "🔥", "土": "🏔️", "金": "⚔️", "水": "🌊"}
-        for i, (ele, score) in enumerate(element_scores.items()):
+        for i, (ele, score) in enumerate(result["scores"].items()):
             with cols[i]:
                 st.metric(f"{element_emojis[ele]} {ele}", f"{score}分")
         
         st.divider()
         
-        # 结果卡片
         st.markdown(f"""
         <div style="background: linear-gradient(135deg, {result['color']}10, #f8f9fa); 
                     border-radius: 20px; padding: 24px; border-left: 6px solid {result['color']};">
             <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px;">
-                <div style="font-size: 48px;">{result['emoji']}</div>
+                <div style="font-size: 48px;">{result['title'][:2]}</div>
                 <div>
                     <div style="font-size: 24px; font-weight: bold; color: {result['color']};">{result['title']}</div>
-                    <div style="font-size: 14px; color: #888;">最高得分：{max_element}（{max_score}分）</div>
+                    <div style="font-size: 14px; color: #888;">最高得分：{result['element']}（{result['score']}分）</div>
                 </div>
             </div>
             <div style="font-size: 16px; color: #333; line-height: 1.8; margin-top: 12px;">
@@ -1403,13 +1275,11 @@ elif page == "🧠 命理答题":
         </div>
         """, unsafe_allow_html=True)
         
-        # 分享按钮（生成分享卡片）
         st.divider()
         col1, col2 = st.columns(2)
         with col1:
             st.info("📸 截图分享到朋友圈，看看朋友是什么命！")
         with col2:
-            # 模拟分享文字
             share_text = f"我测出我是{result['title']}！{result['desc'][:30]}... 快来测测你的命理人格吧！🔮"
             st.code(f"📋 复制这段话分享：\n{share_text}", language="text")
         
